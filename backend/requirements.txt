@@ -2,11 +2,11 @@ fastapi
 uvicorn[standard]
 python-multipart
 opencv-python-headless
-numpy
+numpy==1.26.4
 joblib
 scikit-learn
-setuptools<81
-tensorflow
-tensorflow-hub
+tensorflow==2.15.0
+tf-keras==2.15.0
+tensorflow-hub==0.16.1
 pytest
 httpx
