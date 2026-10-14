@@ -6,13 +6,26 @@ import tensorflow_hub as tfhub
 from app.model_loader import load_model
 from app.utils import build_57_feature_vector
 
-# Load MoveNet & Production RF Model
-print("📦 Loading MoveNet Lightning for production backend...")
-movenet = tfhub.load("https://tfhub.dev/google/movenet/singlepose/lightning/4")
-movenet_fn = movenet.signatures['serving_default']
+# Lazy-loaded global references to save startup memory and time
+_movenet_fn = None
+_rf_model = None
 
-print("📦 Loading Production RF Model from trusted backend artifact...")
-rf_model = load_model()
+def get_movenet():
+    """Load MoveNet Lightning only when the first prediction request arrives."""
+    global _movenet_fn
+    if _movenet_fn is None:
+        print("📦 Loading MoveNet Lightning into RAM...")
+        movenet = tfhub.load("https://tfhub.dev/google/movenet/singlepose/lightning/4")
+        _movenet_fn = movenet.signatures['serving_default']
+    return _movenet_fn
+
+def get_rf_model():
+    """Load Random Forest Model only when the first prediction request arrives."""
+    global _rf_model
+    if _rf_model is None:
+        print("📦 Loading Production RF Model into RAM...")
+        _rf_model = load_model()
+    return _rf_model
 
 
 def predict_pose_image(image_bytes: bytes):
@@ -29,6 +42,10 @@ def predict_pose_image(image_bytes: bytes):
     img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
     resized_img = cv2.resize(img_rgb, (192, 192))
     input_tensor = tf.cast(tf.expand_dims(resized_img, axis=0), dtype=tf.int32)
+
+    # Fetch models lazily on first request
+    movenet_fn = get_movenet()
+    rf_model = get_rf_model()
 
     outputs = movenet_fn(input_tensor)
     keypoints = outputs['output_0'].numpy()[0, 0, :, :]  # Shape: (17, 3)
