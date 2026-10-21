@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "https://binul19-cric-guard-backend.hf.space";
+const API_BASE_URL = import.meta.env.VITE_API_URL || "https://binul19-cricguard.hf.space";
 
 export const analyzeBowling = async (file) => {
     if (!file) {
